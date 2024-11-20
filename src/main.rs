@@ -7,6 +7,27 @@ struct Tree {
     children: Vec<Tree>,
 }
 
+impl PartialEq for Tree {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
+impl Eq for Tree {}
+
+// Implement PartialOrd and Ord for Tree
+impl PartialOrd for Tree {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Tree {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.path.cmp(&other.path)
+    }
+}
+
 struct Helper {}
 
 impl Helper {
@@ -92,18 +113,17 @@ impl Tree {
 }
 
 fn reverse(tree: &mut Tree) {
-    let mut start = 0;
-    let mut end = tree.children.len();
-    if !Helper::is_dir(&tree.path) {
-        return;
+    for branch in &mut tree.children {
+        if Helper::is_dir(&tree.path) {
+            reverse(branch);
+        }
     }
+    tree.children.sort();
+
+    let mut start = 0;
+    let mut end = tree.children.len().saturating_sub(1);
 
     while start < end {
-        end -= 1;
-        if start >= end {
-            break;
-        }
-
         let p1 = tree.children[start].path.clone();
         let p2 = tree.children[end].path.clone();
         let temp_path = Helper::temp_file();
@@ -113,10 +133,7 @@ fn reverse(tree: &mut Tree) {
         Helper::rename_file(&temp_path, &p2);
 
         start += 1;
-    }
-
-    for branch in &mut tree.children {
-        reverse(branch);
+        end = end.saturating_sub(1);
     }
 }
 
@@ -131,28 +148,28 @@ fn main() {
 
     let input_path = input_path.trim();
 
-    let mut depth = String::new();
+    // let mut depth = String::new();
+    //
+    // println!("Enter a depth.");
+    // match stdin().read_line(&mut depth) {
+    //     Ok(_) => (),
+    //     Err(e) => println!("ERROR: {}", e),
+    // }
+    //
+    // let depth: usize = match depth.trim().parse() {
+    //     Ok(d) => d,
+    //     Err(_) => {
+    //         println!("Depth must be a number.");
+    //         3
+    //     }
+    // };
 
-    println!("Enter a depth.");
-    match stdin().read_line(&mut depth) {
-        Ok(_) => (),
-        Err(e) => println!("ERROR: {}", e),
-    }
-
-    let depth: usize = match depth.trim().parse() {
-        Ok(d) => d,
-        Err(_) => {
-            println!("Depth must be a number.");
-            3
-        }
-    };
-
-    Tree::generate_file_tree(input_path, depth);
+    // Tree::generate_file_tree(input_path, depth);
 
     let mut tree = Tree::new(&input_path.to_string());
 
     Tree::to_tree(&mut tree, input_path);
-    tree.print(depth);
+    // tree.print(depth);
 
     reverse(&mut tree);
 }
