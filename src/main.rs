@@ -7,27 +7,6 @@ struct Tree {
     children: Vec<Tree>,
 }
 
-impl PartialEq for Tree {
-    fn eq(&self, other: &Self) -> bool {
-        self.path == other.path
-    }
-}
-
-impl Eq for Tree {}
-
-// Implement PartialOrd and Ord for Tree
-impl PartialOrd for Tree {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Tree {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.path.cmp(&other.path)
-    }
-}
-
 struct Helper {}
 
 impl Helper {
@@ -73,43 +52,45 @@ impl Tree {
         self.children.push(tree);
     }
 
-    fn print(&self, depth: usize) {
-        println!("{}{}", " ".repeat(depth * 2), self.path);
+    // fn print(&self, depth: usize) {
+    //     println!("{}{}", " ".repeat(depth * 2), self.path);
+    //
+    //     for child in &self.children {
+    //         child.print(depth + 1);
+    //     }
+    // }
 
-        for child in &self.children {
-            child.print(depth + 1);
-        }
-    }
     fn to_tree(tree: &mut Tree, entry_path: &str) {
-        let entries = Helper::to_vec(fs::read_dir(entry_path));
+        let mut entries = Helper::to_vec(fs::read_dir(entry_path));
         if entries.is_empty() {
             return;
         }
 
+        entries.sort();
         for (i, entry) in entries.iter().enumerate() {
             tree.add(Tree::new(entry));
             Self::to_tree(&mut tree.children[i], entry);
         }
     }
 
-    fn generate_file_tree(path: &str, depth: usize) {
-        if depth == 0 {
-            return;
-        }
-
-        if let Err(e) = fs::create_dir(path) {
-            if e.kind() != std::io::ErrorKind::AlreadyExists {
-                println!("Failed to create directory {}: {}", path, e);
-                return;
-            }
-        }
-
-        let left_child = format!("{}/left", path);
-        let right_child = format!("{}/right", path);
-
-        Self::generate_file_tree(&left_child, depth - 1);
-        Self::generate_file_tree(&right_child, depth - 1);
-    }
+    // fn generate_file_tree(path: &str, depth: usize) {
+    //     if depth == 0 {
+    //         return;
+    //     }
+    //
+    //     if let Err(e) = fs::create_dir(path) {
+    //         if e.kind() != std::io::ErrorKind::AlreadyExists {
+    //             println!("Failed to create directory {}: {}", path, e);
+    //             return;
+    //         }
+    //     }
+    //
+    //     let left_child = format!("{}/left", path);
+    //     let right_child = format!("{}/right", path);
+    //
+    //     Self::generate_file_tree(&left_child, depth - 1);
+    //     Self::generate_file_tree(&right_child, depth - 1);
+    // }
 }
 
 fn reverse(tree: &mut Tree) {
@@ -118,7 +99,6 @@ fn reverse(tree: &mut Tree) {
             reverse(branch);
         }
     }
-    tree.children.sort();
 
     let mut start = 0;
     let mut end = tree.children.len().saturating_sub(1);
@@ -148,28 +128,8 @@ fn main() {
 
     let input_path = input_path.trim();
 
-    // let mut depth = String::new();
-    //
-    // println!("Enter a depth.");
-    // match stdin().read_line(&mut depth) {
-    //     Ok(_) => (),
-    //     Err(e) => println!("ERROR: {}", e),
-    // }
-    //
-    // let depth: usize = match depth.trim().parse() {
-    //     Ok(d) => d,
-    //     Err(_) => {
-    //         println!("Depth must be a number.");
-    //         3
-    //     }
-    // };
-
-    // Tree::generate_file_tree(input_path, depth);
-
     let mut tree = Tree::new(&input_path.to_string());
 
     Tree::to_tree(&mut tree, input_path);
-    // tree.print(depth);
-
     reverse(&mut tree);
 }
